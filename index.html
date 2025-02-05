@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>GitHub Release Notes Copier</title>
+    <style>
+        /* Define color palette using CSS variables */
+        :root {
+            --background-color: #ffffff;
+            --text-color: #333333;
+            --container-bg: #ffffff;
+            --container-shadow: rgba(0, 0, 0, 0.1);
+            --input-border: #cccccc;
+            --input-focus-border: #007bff;
+            --button-bg: #007bff;
+            --button-hover-bg: #0056b3;
+            --button-text: #ffffff;
+            --error-color: #ff0000;
+            --loader-bg: #fff7d6;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --background-color: #121212;
+                --text-color: #e0e0e0;
+                --container-bg: #1e1e1e;
+                --container-shadow: rgba(255, 255, 255, 0.1);
+                --input-border: #555555;
+                --input-focus-border: #1a73e8;
+                --button-bg: #1a73e8;
+                --button-hover-bg: #1557b0;
+                --button-text: #ffffff;
+                --error-color: #ff6b6b;
+                --loader-bg: #333333;
+            }
+        }
+
+        /* Apply the color palette */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            background-color: var(--container-bg);
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px var(--container-shadow);
+            position: relative;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .input-description {
+            font-size: 14px;
+            color: var(--text-color);
+            margin-bottom: 5px;
+        }
+
+        input,
+        button,
+        textarea {
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid var(--input-border);
+            border-radius: 4px;
+            font-size: 16px;
+            background-color: var(--container-bg);
+            color: var(--text-color);
+        }
+
+        input:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--input-focus-border);
+        }
+
+        button {
+            background-color: var(--button-bg);
+            color: var(--button-text);
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+        }
+
+        button:hover {
+            background-color: var(--button-hover-bg);
+        }
+
+        textarea {
+            width: 778px;
+            height: 300px;
+            resize: vertical;
+        }
+
+        #output {
+            display: none;
+        }
+
+        .error {
+            color: var(--error-color);
+            margin-bottom: 15px;
+        }
+
+        /* Loader styles */
+        .loader {
+            position: relative;
+            width: 100px;
+            height: 130px;
+            background: var(--loader-bg);
+            border-radius: 4px;
+            margin: 0 auto 20px auto;
+            display: none;
+        }
+
+        .loader:before {
+            content: '';
+            position: absolute;
+            width: 54px;
+            height: 25px;
+            left: 50%;
+            top: 0;
+            background-image:
+                radial-gradient(ellipse at center, transparent 24%, #a92142 25%, #e65c72 64%, transparent 65%),
+                linear-gradient(to bottom, transparent 34%, #a92142 35%);
+            background-size: 12px 12px, 100% auto;
+            background-repeat: no-repeat;
+            background-position: center top;
+            transform: translate(-50%, -65%);
+            box-shadow: 0 -3px rgba(0, 0, 0, 0.25) inset;
+        }
+
+        .loader:after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 20%;
+            transform: translateX(-50%);
+            width: 66%;
+            height: 60%;
+            background: linear-gradient(to bottom, #e65c72 30%, transparent 31%);
+            background-size: 100% 16px;
+            animation: writeDown 2s ease-out infinite;
+        }
+
+        @keyframes writeDown {
+            0% {
+                height: 0%;
+                opacity: 0;
+            }
+
+            20% {
+                height: 0%;
+                opacity: 1;
+            }
+
+            80% {
+                height: 65%;
+                opacity: 1;
+            }
+
+            100% {
+                height: 65%;
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>GitHub Release Notes Copier</h1>
+        <a class="github-button" href="https://github.com/snokamedia/snoka-release-notes" data-color-scheme="no-preference: light; light: light; dark: dark;" data-icon="octicon-star" data-size="large" aria-label="Star snokamedia/snoka-release-notes on GitHub">Star</a>
+        <form id="releaseForm" style="padding-top:20px">
+            <div>
+                <label for="repoUrl">GitHub Releases URL</label>
+                <div class="input-description">
+                    Enter the full GitHub releases page URL, e.g., <code>https://github.com/user/repo/releases</code>.
+                </div>
+                <input type="url" id="repoUrl" placeholder="https://github.com/user/repo/releases" required />
+            </div>
+            <div>
+                <label for="numReleases">Number of Releases</label>
+                <div class="input-description">
+                    Enter the number of latest releases to fetch if no version tag is provided.
+                    <br>
+                    This field uses a text input (with numeric restrictions) instead of the native number input.
+                </div>
+                <!-- Using type="text" with inputmode and pattern for numeric input -->
+                <input type="text" id="numReleases" placeholder="Enter number of releases to fetch" inputmode="numeric"
+                    pattern="\d*" />
+            </div>
+            <div>
+                <label for="versionTag">Up to Version Tag (optional)</label>
+                <div class="input-description">
+                    Optionally, enter a specific version tag (e.g., <code>v1.2.3</code>) to fetch all releases up to and
+                    including this tag.
+                    <br>
+                    If this tag is not found, an error will be shown.
+                </div>
+                <input type="text" id="versionTag" placeholder="e.g., v1.2.3" />
+            </div>
+            <button type="submit">Fetch Release Notes</button>
+        </form>
+        <button id="copyBtn" style="display: none;">Copy JSON to Clipboard</button>
+        <div id="errorMsg" class="error"></div>
+        <!-- Loader element -->
+        <span class="loader" id="loader"></span>
+        <textarea id="output" readonly placeholder="JSON output will appear here..."></textarea>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('releaseForm');
+            const repoUrlInput = document.getElementById('repoUrl');
+            const numReleasesInput = document.getElementById('numReleases');
+            const versionTagInput = document.getElementById('versionTag');
+            const outputArea = document.getElementById('output');
+            const errorMsg = document.getElementById('errorMsg');
+            const copyBtn = document.getElementById('copyBtn');
+            const loader = document.getElementById('loader');
+            const output = document.getElementById('output');
+
+            // Enhance the "number" field by ensuring only digits can be entered.
+            numReleasesInput.addEventListener('input', (event) => {
+                event.target.value = event.target.value.replace(/\D/g, '');
+            });
+
+            form.addEventListener('submit', async (event) => {
+                event.preventDefault(); // Prevent page reload
+                errorMsg.textContent = '';
+                outputArea.value = '';
+                copyBtn.style.display = 'none';
+                loader.style.display = 'block'; // Show loader
+                output.style.display = 'none';
+
+                const repoUrl = repoUrlInput.value.trim();
+                const numReleasesStr = numReleasesInput.value.trim();
+                const versionTag = versionTagInput.value.trim();
+
+                // Validate URL format (expecting something like https://github.com/owner/repo/releases)
+                const regex = /^https?:\/\/github\.com\/([^\/]+)\/([^\/]+)\/releases/;
+                const match = repoUrl.match(regex);
+                if (!match) {
+                    errorMsg.textContent = 'Please enter a valid GitHub releases URL.';
+                    loader.style.display = 'none';
+                    return;
+                }
+                const owner = match[1];
+                const repo = match[2];
+                const apiUrl = `https://api.github.com/repos/${owner}/${repo}/releases`;
+
+                // Parse the number of releases; default to 10 if not provided.
+                const numReleases = numReleasesStr ? parseInt(numReleasesStr, 10) : 10;
+                if (isNaN(numReleases) || numReleases < 1) {
+                    errorMsg.textContent = 'Please enter a valid positive number for the number of releases.';
+                    loader.style.display = 'none';
+                    return;
+                }
+
+                try {
+                    let selectedReleases = [];
+                    if (versionTag) {
+                        // First, try to fetch the specific release by tag.
+                        let targetRelease;
+                        try {
+                            const tagResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/releases/tags/${encodeURIComponent(versionTag)}`);
+                            if (!tagResponse.ok) {
+                                throw new Error(`Release with tag "${versionTag}" not found.`);
+                            }
+                            targetRelease = await tagResponse.json();
+                        } catch (error) {
+                            errorMsg.textContent = error.message;
+                            loader.style.display = 'none';
+                            return;
+                        }
+                        // Now, fetch releases page by page until we find the target release.
+                        let releasesAll = [];
+                        let page = 1;
+                        const perPage = 100;
+                        while (true) {
+                            const releasesResponse = await fetch(`${apiUrl}?page=${page}&per_page=${perPage}`);
+                            if (!releasesResponse.ok) {
+                                throw new Error(`Error fetching releases: ${releasesResponse.status} ${releasesResponse.statusText}`);
+                            }
+                            const releasesPage = await releasesResponse.json();
+                            if (releasesPage.length === 0) {
+                                break; // No more releases available.
+                            }
+                            releasesAll = releasesAll.concat(releasesPage);
+                            if (releasesPage.some(release => release.tag_name === versionTag)) {
+                                break;
+                            }
+                            page++;
+                        }
+                        const targetIndex = releasesAll.findIndex(release => release.tag_name === versionTag);
+                        if (targetIndex === -1) {
+                            errorMsg.textContent = `Release with tag "${versionTag}" was not found in the fetched releases.`;
+                            loader.style.display = 'none';
+                            return;
+                        }
+                        selectedReleases = releasesAll.slice(0, targetIndex + 1);
+                    } else {
+                        // No version tag provided. Just fetch the desired number of releases.
+                        const releasesResponse = await fetch(`${apiUrl}?per_page=${numReleases}`);
+                        if (!releasesResponse.ok) {
+                            throw new Error(`GitHub API error: ${releasesResponse.status} ${releasesResponse.statusText}`);
+                        }
+                        const releases = await releasesResponse.json();
+                        if (!Array.isArray(releases)) {
+                            throw new Error('Unexpected API response format.');
+                        }
+                        selectedReleases = releases.slice(0, numReleases);
+                    }
+
+                    const outputReleases = selectedReleases.map((release) => ({
+                        tag: release.tag_name,
+                        name: release.name,
+                        published_at: release.published_at,
+                        body: release.body,
+                    }));
+
+                    const jsonOutput = JSON.stringify(outputReleases, null, 2);
+                    outputArea.value = jsonOutput;
+                    copyBtn.style.display = 'block';
+                } catch (error) {
+                    console.error(error);
+                    errorMsg.textContent = error.message;
+                } finally {
+                    loader.style.display = 'none'; // Always hide loader when done
+                    output.style.display = 'inline-block';
+                }
+            });
+
+            copyBtn.addEventListener('click', () => {
+                outputArea.select();
+                document.execCommand('copy');
+                copyBtn.textContent = 'Copied!';
+                setTimeout(() => {
+                    copyBtn.textContent = 'Copy JSON to Clipboard';
+                }, 2000);
+            });
+        });
+    </script>
+</body>
+
+</html>
